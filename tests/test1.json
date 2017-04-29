@@ -1,0 +1,145 @@
+{
+  "occupancy": 18,
+  "nb_days": 2,
+  "nb_rooms": 3,
+
+  "nb_teachers": 3,
+  "nb_st_groups": 3,
+
+  "nb_time_slots": 4,
+  "ra_constraints": {
+    "T": [
+      {
+        "constraints":
+        [
+          {
+            "day": 0,
+            "time_slot": 3
+          },
+          {
+            "day": 1,
+            "time_slot": 2
+          }
+        ],
+        "nb_courses": 6
+      },
+      {
+        "constraints":
+        [
+          {
+            "day": 0,
+            "time_slot": 3
+          },
+          {
+            "day": 1,
+            "time_slot": 1
+          }
+        ],
+        "nb_courses": 6
+      },
+      {
+        "constraints":
+        [
+          {
+            "day": 0,
+            "time_slot": 2
+          },
+          {
+            "day": 1,
+            "time_slot": 0
+          }
+        ],
+        "nb_courses": 6
+      }
+    ],
+    "SG": [
+      {
+        "constraints": [
+          {
+            "course": 0,
+            "teacher": 0
+          },
+          {
+            "course": 1,
+            "teacher": 1
+          },
+          {
+            "course": 2,
+            "teacher": 2
+          },
+          {
+            "course": 3,
+            "teacher": 0
+          },
+          {
+            "course": 4,
+            "teacher": 1
+          },
+          {
+            "course": 5,
+            "teacher": 2
+          }
+        ],
+        "nb_courses": 6
+      },
+      {
+        "constraints": [
+          {
+            "course": 0,
+            "teacher": 0
+          },
+          {
+            "course": 1,
+            "teacher": 1
+          },
+          {
+            "course": 2,
+            "teacher": 2
+          },
+          {
+            "course": 3,
+            "teacher": 0
+          },
+          {
+            "course": 4,
+            "teacher": 1
+          },
+          {
+            "course": 5,
+            "teacher": 2
+          }
+        ],
+        "nb_courses": 6
+      },
+      {
+        "constraints": [
+          {
+            "course": 0,
+            "teacher": 0
+          },
+          {
+            "course": 1,
+            "teacher": 1
+          },
+          {
+            "course": 2,
+            "teacher": 2
+          },
+          {
+            "course": 3,
+            "teacher": 0
+          },
+          {
+            "course": 4,
+            "teacher": 1
+          },
+          {
+            "course": 5,
+            "teacher": 2
+          }
+        ],
+        "nb_courses": 6
+      }
+    ]
+  }
+}
