@@ -19,4 +19,4 @@ if __name__ == '__main__':
     args = get_arguments()
     rules = read_test(args.test)
     environment = Environment(rules)
-    environment.start()
+    environment.step()

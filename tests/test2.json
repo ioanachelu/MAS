@@ -84,5 +84,51 @@
         "nb_courses": 6
       }
     ]
-  }
+  },
+  "cell_constraints": {
+    "unavailability": [
+      {
+        "room": 0,
+        "day": 0,
+        "time_slot": 1
+      },
+      {
+        "room": 1,
+        "day": 1,
+        "time_slot": 0
+      },
+      {
+        "room": 1,
+        "day": 1,
+        "time_slot": 3
+      },
+      {
+        "room": 2,
+        "day": 0,
+        "time_slot": 2
+      },
+      {
+        "room": 2,
+        "day": 0,
+        "time_slot": 3
+      }
+    ],
+    "tools_availability": [
+      {
+        "room": 0,
+        "tools": ["lecture_room", "projector"]
+      },
+      {
+        "room": 1,
+        "tools": ["lecture_room", "projector"]
+      },
+      {
+        "room": 2,
+        "tools": ["laboratory"]
+      }
+
+    ]
+}
+
+
 }
