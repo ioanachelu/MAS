@@ -49,14 +49,21 @@ class Environment():
         while True:
             for ba in self.all_bas:
                 ba.step()
+                # rez = ba.test_deadlock()
+                # if not rez:
+                #     print("DEADLOCK")
+                #     exit(0)
                 print("BA {} acted".format(ba.name))
-                for baj in self.all_bas:
-                    baj.perceive()
-                for ra in self.all_ras:
-                    ra.perceive()
+                self.perceive_cycle()
                 self.print_info(time)
             time += 1
 
+    def perceive_cycle(self):
+        for i in range(2):
+            for baj in self.all_bas:
+                baj.perceive()
+            for ra in self.all_ras:
+                ra.perceive()
     # def start(self):
     #     for ra in self.all_ras:
     #         ra.start()
@@ -74,28 +81,28 @@ class Environment():
     #             exit(0)
 
     def print_pawns(self, time):
-        double_line = '=' * (5 + 1 + (35 + 2 + 8) * self.rules["nb_time_slots"])
-        anchor = ' ' * int((5 + 1 + (35 + 2 + 8) * self.rules["nb_time_slots"] - 7) / 2 - 2)
+        double_line = '=' * (5 + 1 + (35 + 2 + 8) * self.rules["nb_rooms"])
+        anchor = ' ' * int((5 + 1 + (35 + 2 + 8) * self.rules["nb_rooms"] - 7) / 2 - 2)
         print(double_line)
         print(('||' + anchor + " TIME {} " + anchor + '||').format(time))
         print(double_line)
-
-        table_header = ">" * (5 + 2 + (35 + 2 + 8) * self.rules["nb_time_slots"])
-        table_footer = "<" * (5 + 2 + (35 + 2 + 8) * self.rules["nb_time_slots"])
+        time_slot_encoder = [" 8-10", "10-12", "14-16", "16–18"]
+        table_header = ">" * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
+        table_footer = "<" * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
         print(bcolors.WARNING + table_header + bcolors.ENDC)
         for day in range(self.rules["nb_days"]):
-            line = '-' * (5 + 2 + (35 + 2 + 8) * self.rules["nb_time_slots"])
-            double_line = '=' * (5 + 2 + (35 + 2 + 8) * self.rules["nb_time_slots"])
-            anchor = ' ' * int((5 + 2 + (35 + 2 + 8) * self.rules["nb_time_slots"] - 7) / 2 - 2)
+            line = '-' * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
+            double_line = '=' * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
+            anchor = ' ' * int((5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"] - 7) / 2 - 2)
             print(double_line)
             print(('||' + anchor + " DAY {} " + anchor + '||').format(day))
             print(double_line)
             info_grid = []
             info_rez = []
-            for room in range(self.rules["nb_rooms"]):
+            for time_slot in range(self.rules["nb_time_slots"]):
                 info_grid.append([])
                 info_rez.append([])
-                for time_slot in range(self.rules["nb_time_slots"]):
+                for room in range(self.rules["nb_rooms"]):
                     cell = self.get_cell([day, room, time_slot])
                     if len(cell.bas) == 0:
                         info_grid[-1].append("  ")
@@ -127,20 +134,20 @@ class Environment():
                     else:
                         info_rez[-1].append("None/None")
 
-            header = "|R / T|"
-            for i in range(self.rules["nb_time_slots"]):
+            header = "|T / R|"
+            for i in range(self.rules["nb_rooms"]):
                 header += "|                     {}                     |".format(i)
             print(header)
             print(line)
 
-            for room, time_slots in enumerate(info_grid):
-                row = "|  {}  |".format(room)
-                for t in time_slots:
+            for time_slot, rooms in enumerate(info_grid):
+                row = "|{}|".format(time_slot_encoder[time_slot])
+                for t in rooms:
                     row += "|{}|".format(t.ljust(35 + 8))
                 print(row)
 
-                row_rez = "|  {}  |".format(room)
-                for t in info_rez[room]:
+                row_rez = "|{}|".format(time_slot_encoder[time_slot])
+                for t in info_rez[time_slot]:
                     row_rez += "|{}|".format(t.ljust(35 + 8))
                 print(bcolors.OKBLUE + row_rez + bcolors.ENDC)
                 print(line)
@@ -179,32 +186,32 @@ class Environment():
         return self.grid[directions[0]][directions[1]][directions[2]]
 
     def print_solution(self):
-        double_line = '=' * (5 + 1 + (35 + 2 + 8) * self.rules["nb_time_slots"])
-        anchor = ' ' * int((5 + 1 + (35 + 2 + 8) * self.rules["nb_time_slots"] - 7) / 2 - 2)
+        double_line = '=' * (5 + 1 + (35 + 2 + 8) * self.rules["nb_rooms"])
+        anchor = ' ' * int((5 + 1 + (35 + 2 + 8) * self.rules["nb_rooms"] - 7) / 2 - 2)
         print(double_line)
         print(('||' + anchor + " SOLUTION " + anchor + '||'))
         print(double_line)
-        time_slot_encoder = ["8h-10h", "10h-12h", "14h-16h", "16h–18h"]
-        table_header = ">" * (5 + 2 + (35 + 2 + 8) * self.rules["nb_time_slots"])
-        table_footer = "<" * (5 + 2 + (35 + 2 + 8) * self.rules["nb_time_slots"])
+        time_slot_encoder = [" 8-10", "10-12", "14-16", "16–18"]
+        table_header = ">" * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
+        table_footer = "<" * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
         print(bcolors.OKGREEN + table_header + bcolors.ENDC)
         for day in range(self.rules["nb_days"]):
-            line = '-' * (5 + 2 + (35 + 2 + 8) * self.rules["nb_time_slots"])
-            double_line = '=' * (5 + 2 + (35 + 2 + 8) * self.rules["nb_time_slots"])
-            anchor = ' ' * int((5 + 2 + (35 + 2 + 8) * self.rules["nb_time_slots"] - 7) / 2 - 2)
+            line = '-' * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
+            double_line = '=' * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
+            anchor = ' ' * int((5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"] - 7) / 2 - 2)
             print(double_line)
             print(('||' + anchor + " DAY {} " + anchor + '||').format(day))
             print(double_line)
             info_grid = []
             info_rez = []
-            for room in range(self.rules["nb_rooms"]):
+            for time_slot in range(self.rules["nb_time_slots"]):
                 info_grid.append([])
                 info_rez.append([])
-                for time_slot in range(self.rules["nb_time_slots"]):
+                for room in range(self.rules["nb_rooms"]):
                     cell = self.get_cell([day, room, time_slot])
                     if cell.reservation:
+                        one = cell.reservation.type + str(cell.reservation.ra_id + 1)
                         if cell.reservation.partner:
-                            one = cell.reservation.type + str(cell.reservation.ra_id + 1)
                             two = cell.reservation.partnership.type + str(cell.reservation.partnership.ra_id + 1)
                             info_rez[-1].append(one + "/" + two)
                         else:
@@ -212,15 +219,15 @@ class Environment():
                     else:
                         info_rez[-1].append("None/None")
 
-            header = "|R / T|"
-            for i in range(self.rules["nb_time_slots"]):
-                header += "|                   {}                  |".format(time_slot_encoder[i])
+            header = "|T / R|"
+            for i in range(self.rules["nb_rooms"]):
+                header += "|                     {}                     |".format(i)
             print(header)
             print(line)
 
-            for room, time_slots in enumerate(info_grid):
-                row_rez = "|  {}  |".format(room)
-                for t in info_rez[room]:
+            for time_slot, rooms in enumerate(info_grid):
+                row_rez = "|{}|".format(time_slot_encoder[time_slot])
+                for t in info_rez[time_slot]:
                     row_rez += "|{}|".format(t.ljust(35 + 8))
                 print(bcolors.FAIL + row_rez + bcolors.ENDC)
                 print(line)

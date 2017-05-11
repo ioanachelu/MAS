@@ -6,6 +6,7 @@ import time
 import threading
 from utils import Constraint
 
+
 class BA():
     def __init__(self, type, ra, id, rules, cell, CI, CB, mq, env):
         # super(BA, self).__init__(name=type + str(ra.id) + str(id))
@@ -50,6 +51,20 @@ class BA():
         # the list of brothers this guy has
         self.brothers = []
 
+    def test_deadlock(self):
+        if self.reservation:
+            return True
+        ok = False
+        for day in range(self.rules["nb_days"]):
+            for room in range(self.rules["nb_rooms"]):
+                for time_slot in range(self.rules["nb_time_slots"]):
+                    cell = self.env.get_cell([day, room, time_slot])
+                    if BA.compatible_cell(self, cell):
+                        ok = True
+        if ok == False:
+            print("zis is bad")
+        return ok
+
     def modify_induced_constraints(self, CB):
         self.CB = CB
 
@@ -68,62 +83,70 @@ class BA():
                 self.set_partnership(message.partner_of_cell, inform=False)
                 if self.partnership.reservation:
                     if self.reservation and self.rCell != self.partnership.rCell:
-                        self.cancel_reservation()
+                        self.cancel_reservation(extend_to_partner=False)
                     self.set_reservation(self.partnership.rCell)
+                    self.inform_proxy_of_cell_reservation(self.proxy)
                 else:
                     if self.reservation:
                         self.inform_ba_of_cell_reservation(self.partnership)
 
             if message.type == 'partnership_cancelation':
-                print("BA {} received partnership cancelation message".format(self.name))
-                if self.partner:
+                print("BA {} received partnership cancelation message from {}".format(self.name, message.sender.name))
+                if self.partner and self.partnership != message.sender:
                     self.cancel_partnership()
+                if self.partner and self.partnership == message.sender:
+                    self.cancel_partnership(inform=False)
+                    if self.reservation and self.rCell.reservation != self:
+                        self.cancel_reservation(extend_to_partner=False)
 
             if message.type == 'reservation_cancelation':
-                print("BA {} received reservation cancelation message".format(self.name))
+                print("BA {} received reservation cancelation message from {}".format(self.name, message.sender.name))
                 if self.reservation:
                     self.cancel_reservation()
 
             if message.type == 'reservation':
-                print("BA {} received reservation message for cell [{}, {}, {}]".format(self.name, message.partner_of_cell.day,
-                                                                                       message.partner_of_cell.room,
-                                                                                       message.partner_of_cell.time_slot))
+                print("BA {} received reservation message from {} for cell [{}, {}, {}]".format(self.name,
+                                                                                                message.sender.name,
+                                                                                                message.partner_of_cell.day,
+                                                                                                message.partner_of_cell.time_slot,
+                                                                                                message.partner_of_cell.room))
                 if self.reservation and self.rCell != message.partner_of_cell:
-                    self.cancel_reservation()
+                    self.cancel_reservation(extend_to_partner=False)
                     self.set_reservation(message.partner_of_cell)
+                    self.inform_proxy_of_cell_reservation(self.proxy)
                 elif not self.reservation:
                     self.set_reservation(message.partner_of_cell)
+                    self.inform_proxy_of_cell_reservation(self.proxy)
 
-    def get_next_cell(self):
+    def get_possibilities(self):
         day = self.cell.day
         room = self.cell.room
         time_slot = self.cell.time_slot
+
+        possibilities = []
         directions = [day, room, time_slot]
         up_down = [1, -1]
         directions_end = [self.rules["nb_days"], self.rules["nb_rooms"], self.rules["nb_time_slots"]]
 
-        while True:
-            choose_direction = random.randint(0, 2)
-            choose_up_down = random.randint(0, 1)
+        for i in range(3):
+            for j in up_down:
+                new_directions = directions[:]
+                new_directions[i] += j
+                new_directions[i] %= directions_end[i]
+                next_cell = self.env.get_cell(new_directions)
+                if next_cell != self.cell:
+                    possibilities.append(next_cell)
 
-            # if directions[choose_direction] + up_down[choose_up_down] > 0 and \
-            #     directions[choose_direction] + up_down[choose_up_down] < directions_end[choose_direction]:
-
-            new_directions = directions[:]
-            new_directions[choose_direction] += up_down[choose_up_down]
-            new_directions[choose_direction] %= directions_end[choose_direction]
-            next_cell = self.env.get_cell(new_directions)
-
-            return next_cell
+        return possibilities
 
     def move_to(self, cell):
-        print("BA {} moved from cell DAY {} ROOM {} TIME {} to cell DAY {} ROOM {} TIME {}".format(self.name,
+        print("BA {} moved from cell DAY {} TIME {} ROOM {} to cell DAY {} TIME {} ROOM {}".format(self.name,
                                                                                                    self.cell.day,
-                                                                                                   self.cell.room,
                                                                                                    self.cell.time_slot,
+                                                                                                   self.cell.room,
                                                                                                    cell.day,
-                                                                                                   cell.room,
-                                                                                                   cell.time_slot))
+                                                                                                   cell.time_slot,
+                                                                                                   cell.room))
 
         if cell == self.cell:
             return
@@ -135,6 +158,7 @@ class BA():
             self.cell = cell
 
             #     print("BA {} is moving from [{},{},{}] to [{},{},{}]".format(self.name, old_cell.day, old_cell.room,
+
     #                                                              old_cell.time_slot, self.cell.day,
     #                                                              self.cell.room,
     #                                                              self.cell.time_slot))
@@ -152,7 +176,7 @@ class BA():
         ra.mq.append(m)
 
     def inform_ba_of_partnership_cancelation(self, baj):
-        m = Message("partnership_cancelation")
+        m = Message("partnership_cancelation", sender=self)
         baj.mq.append(m)
 
     def inform_proxy_of_cell_reservation(self, ra):
@@ -164,11 +188,11 @@ class BA():
         ra.mq.append(m)
 
     def inform_ba_of_cell_reservation(self, baj):
-        m = Message("reservation", self.rCell)
+        m = Message("reservation", self.rCell, sender=self)
         baj.mq.append(m)
 
     def inform_ba_of_cell_reservation_cancelation(self, baj):
-        m = Message("reservation_cancelation")
+        m = Message("reservation_cancelation", sender=self)
         baj.mq.append(m)
 
     def partner_with(self, baj):
@@ -176,30 +200,34 @@ class BA():
         self.cancel_partnership()
         self.set_partnership(baj)
 
-    def cancel_reservation(self):
+    def cancel_reservation(self, extend_to_partner=True):
         if self.reservation:
             self.reservation = False
-            self.rCell.reservation = None
+            if self.rCell.reservation == self:
+                self.rCell.reservation = None
             self.rCell = None
             self.time = 1
             self.CR = []
-            if self.partner:
+            if extend_to_partner == True and self.partner:
                 # inform him of the cell reservation
                 self.inform_ba_of_cell_reservation_cancelation(self.partnership)
             self.inform_proxy_of_cell_reservation_cancelation(self.proxy)
 
     def set_reservation(self, cell):
         self.cancel_reservation()
-        if cell.reservation is not None and self.cell.reservation != self.partnership:
+        if cell.reservation is not None and cell.reservation != self.partnership:
             cell.reservation.cancel_reservation()
         self.reservation = True
         self.rCell = cell
-        cell.reservation = self
-        self.CR = [Constraint("R", day=cell.day, time_slot=cell.time_slot, room=cell.room)]
+        if cell.reservation is None:
+            cell.reservation = self
+        if cell.reservation == self:
+            self.CR = [Constraint("R", day=cell.day, time_slot=cell.time_slot, room=cell.room)]
 
-    def cancel_partnership(self):
+    def cancel_partnership(self, inform=True):
         if self.partner:
-            self.inform_ba_of_partnership_cancelation(self.partnership)
+            if inform:
+                self.inform_ba_of_partnership_cancelation(self.partnership)
             self.inform_proxy_of_partnership_cancelation(self.proxy)
             self.partnership = None
             self.partner = False
@@ -208,13 +236,14 @@ class BA():
     def set_partnership(self, baj, inform=True):
         self.partner = True
         self.partnership = baj
-        self.CP = baj.CI
+        self.CP = (baj.CI + baj.CR + baj.get_induced_constraints())
         if inform:
             self.inform_ba_of_partnership(baj)
         self.inform_proxy_of_partnership(self.proxy)
 
     def reserve_crt_cell(self):
-        print("BA {} reserves cell: DAY {}, ROOM {}, TIME {}".format(self.name, self.cell.day, self.cell.room, self.cell.time_slot))
+        print("BA {} reserves cell: DAY {}, TIME {}, ROOM {}".format(self.name, self.cell.day, self.cell.time_slot,
+                                                                     self.cell.room))
         # set the current reservation
         # treats also the partners case and the case other reservations of the cell exists and
         # the case I have a different reservation that needs to be canceled
@@ -226,44 +255,11 @@ class BA():
             self.inform_ba_of_cell_reservation(self.partnership)
         self.inform_proxy_of_cell_reservation(self.proxy)
 
-        # if self.cell.reservation is not None:
-        #     self.cell.reservation.rCell = None
-        #
-        #     # TODO inform him I have stolen the reservation
-        #     self.cell.reservation.time = 1
-        #     if self.cell.reservation.partner is not None:
-        #         print("{} stole the reservation of cell: day-{} room-{} time-{} from {} and {}".format(self.name,
-        #                                                                                                self.cell.day,
-        #                                                                                                self.cell.room,
-        #                                                                                                self.cell.time_slot,
-        #                                                                                                self.cell.reservation.name,
-        #                                                                                                self.cell.reservation.partner.name))
-        #         self.cell.reservation.partner.rCell = None
-        #         # TODO inform him I have stolen the reservation
-        #         self.cell.reservation.partner.time = 1
-        #     else:
-        #         print("{} stole the reservation of cell: day-{} room-{} time-{} from {} and {}".format(self.name,
-        #                                                                                                self.cell.day,
-        #                                                                                                self.cell.room,
-        #                                                                                                self.cell.time_slot,
-        #                                                                                                self.cell.reservation.name,
-        #                                                                                                None))
-        #
-        # if self.rCell is not None:
-        #     self.rCell.set_reservation(None)
-        #
-        # self.rCell = self.cell
-        # self.cell.set_reservation(self)
-        # if self.partner is not None:
-        #     self.inform_ba_of_cell_reservation(self.partner)
-        # self.inform_proxy_of_cell_reservation(self.proxy)
-        # self.time = 1
-
     def process_crt_cell(self):
-        bas_in_cell = [ba for ba in self.cell.get_bas() if ba != self]
-        for baj in bas_in_cell:
-            if baj in self.brothers:
-                return
+        # bas_in_cell = [ba for ba in self.cell.get_bas() if ba != self]
+        # for baj in bas_in_cell:
+        #     if baj in self.brothers:
+        #         return 2
 
         # if this cell is compatible and..
         # my reservation goal is not achieved and...
@@ -271,14 +267,31 @@ class BA():
         # than book that damn thing immediately
         if BA.compatible_cell(self, self.cell) and not self.reservation and self.cell.reservation is None:
             self.reserve_crt_cell()
+            return 1
 
         # if this cell is compatible but...
         # I already have a reservation and it's not this one and..
         # the cost of the current cell is lower than the cost of my current reservation...
         # reserve this cell instead
         if BA.compatible_cell(self, self.cell) and \
-                (self.reservation and self.cell != self.rCell and (BA.rCost(self, self.cell) < BA.rCost(self, self.rCell))):
+                (self.reservation and self.cell != self.rCell and (
+                    BA.rCost(self, self.cell) < BA.rCost(self, self.rCell))):
             self.reserve_crt_cell()
+            return 1
+
+        if BA.compatible_cell(self, self.cell) and \
+            (not self.reservation and (BA.rCost(self, self.cell) <= BA.rCost(self.cell.reservation, self.cell))):
+            self.reserve_crt_cell()
+            return 1
+
+        if BA.compatible_cell(self, self.cell) and \
+                (self.reservation and self.cell != self.rCell and self.cell.reservation is not None and
+                     (BA.rCost(self, self.cell) <= BA.rCost(self.cell.reservation, self.cell)) and
+                     (BA.rCost(self, self.cell) <= BA.rCost(self, self.rCell))):
+            self.reserve_crt_cell()
+            return 1
+
+        return 0
 
     # extend the BA acquaintances network. Hand shake a bit...
     def add_bas_to_memory(self):
@@ -293,8 +306,8 @@ class BA():
                     if bak not in self.knows:
                         self.knows.append(bak)
 
-        # set as eligible bas as the one in the current cell
-        # self.eligible_bas = self.knows
+                        # set as eligible bas as the one in the current cell
+                        # self.eligible_bas = self.knows
 
     # filter a bit the BAs in the cell. Some are really bad people..
     def process_encountered_bas(self):
@@ -317,27 +330,31 @@ class BA():
             # or I already acieved the partnership goal and my partner is better than the new opportunity in front of me
             # ignore this guy
             if not BA.compatible(self, baj) or (
-                self.partner and BA.pCost(self, baj) >= BA.pCost(self, self.partnership)):
+                        self.partner and BA.pCost(self, baj) >= BA.pCost(self, self.partnership)):
+                if not BA.compatible(self, baj) and self.reservation and BA.compatible_without_his_reservation(self, baj):
+                    self.partner_with(baj)
+                    return 1
                 # self.knows.extend(baj.knows)
                 continue
             # if he's compatible and...
             # if I don;t have a partnet and he doesn't have a partner
             if not self.partner and not baj.partner:
                 self.partner_with(baj)
-                break
+                return 1
             # if I have a partner but this guy is better and I am not competing with anyone
             if self.partner and BA.pCost(self, baj) < BA.pCost(self, self.partnership) and not baj.partner:
                 self.partner_with(baj)
-                break
+                return 1
             # if I have a partner, but this guy also has a partner, but our relationship is the best
             if self.partner and BA.pCost(self, baj) < BA.pCost(self, self.partnership) and baj.partner and BA.pCost(
                     self, baj) < BA.pCost(baj, baj.partnership):
                 self.partner_with(baj)
-                break
+                return 1
             # if I don;t have a partner, but this guy has
             if not self.partner and baj.partner and BA.pCost(self, baj) < BA.pCost(baj, baj.partnership):
                 self.partner_with(baj)
-                break
+                return 1
+        return 0
 
     def perceive(self):
         self.process_messages()
@@ -348,28 +365,50 @@ class BA():
             # if goals are satisfied
             if BA.rCost(self, self.rCell) == 0:
                 # if reservation is optimal that should move to it and stay there
-                self.move_to(self.rCell)
+                if self.cell == self.rCell:
+                    print("Reservation is optimal and i am already in that cell")
+                else:
+                    print("Reservation is optimal and i am going there cell")
+                    self.move_to(self.rCell)
+                self.add_bas_to_memory()
             else:
-                self.process_crt_cell()
+                print("Reservation is not optimal. Adding BAs to memory an processing current cell")
+                self.add_bas_to_memory()
+                rez = self.process_crt_cell()
+                if rez == 0:
+                    print("Cell doesn't fit with constraints")
+                if rez == 2:
+                    print("Moving along. Brothers in cell")
         else:
             # randomly sample a next cell. TODO: skip the one I know are no good. Maybe later when introducing cell constraints
-            tries = 0
-            while True:
-                tries += 1
-                next_cell = self.get_next_cell()
-                if next_cell not in self.knownCells:
-                    self.move_to(next_cell)
-                    break
-                if tries == 10:
-                    self.move_to(next_cell)
-                    break
+            self.explore()
             self.add_bas_to_memory()  # analyse bas which are in the cell
-            self.process_encountered_bas()  # verify whether they fit with constraints
+            rez = self.process_encountered_bas()  # verify whether they fit with constraints
+            if rez == 0:
+                print("No BAs fit with constraints")
             # if goals are not reached
             if not self.partner or not self.reservation:
                 # analyse the current cell
-                self.process_crt_cell()
+                rez = self.process_crt_cell()
+                if rez == 0:
+                    print("Cell doesn't fit with constraints")
+                if rez == 2:
+                    print("Moving along. Brothers in cell")
 
+    def explore(self):
+        possibilities = self.get_possibilities()
+        pruned_possibilities = []
+        for cell in possibilities:
+            if cell not in self.knownCells:
+                pruned_possibilities.append(cell)
+        if len(pruned_possibilities) == 0:
+            print("All cells are known. Choosing randomly of the known cells")
+            choosen_cell = random.choice(self.knownCells)
+        else:
+            print("Exploring a new cell.")
+            choosen_cell = random.choice(pruned_possibilities)
+            self.knownCells.extend(pruned_possibilities)
+        self.move_to(choosen_cell)
 
     @staticmethod
     def compatible_cell(bai, cj):
@@ -380,8 +419,21 @@ class BA():
         return bai.type != baj.type and len(BA.NC_ba(bai, baj)) == 0
 
     @staticmethod
+    def compatible_without_his_reservation(bai, baj):
+        rez = bai.type != baj.type and len(BA.NC_ba_without_his_reservation(bai, baj)) == 0
+        if rez:
+            print("sdasfas")
+        return rez
+
+    @staticmethod
     def NC_ba(bai, baj):
-         return BA.nonCompatible(bai.CI + bai.get_induced_constraints() + bai.CR, baj.CI + baj.get_induced_constraints() + baj.CR)
+        return BA.nonCompatible(bai.CI + bai.get_induced_constraints() + bai.CR,
+                                baj.CI + baj.get_induced_constraints() + baj.CR)
+
+    @staticmethod
+    def NC_ba_without_his_reservation(bai, baj):
+        return BA.nonCompatible(bai.CI + bai.get_induced_constraints() + bai.CR,
+                                baj.CI + baj.get_induced_constraints(), no_rez=True)
 
     @staticmethod
     def NC_cell(bai, cj):
@@ -404,51 +456,71 @@ class BA():
         return cost
 
     @staticmethod
-    def nonCompatible(Ci, Cj):
-        non_c = [c for c in Ci if BA.nonCompatible_constraint_with_set(c, Cj)]
+    def nonCompatible(Ci, Cj, no_rez=False):
+        non_c = [c for c in Ci if BA.nonCompatible_constraint_with_set(c, Cj, no_rez)]
         return non_c
 
+
     @staticmethod
-    def nonCompatible_constraint_with_set(c, Cj):
+    def nonCompatible_constraint_with_set(c, Cj, no_rez=False):
         res = []
         for cc in Cj:
-            if BA.nonCompatible_constraints(c, cc):
+            if BA.nonCompatible_constraints(c, cc, no_rez):
                 res.append(c)
                 break
 
         return res
 
+
     @staticmethod
-    def nonCompatible_constraints(c, cc):
+    def nonCompatible_constraints(c, cc, no_rez=False):
         if cc.type == "U" or c.type == "U":
             return True
         if ((c.type == "T" or c.type == "SG") and cc.type == "A" and 'projector' not in cc.tools) or ((cc.type == 'T' or
-            cc.type == 'SG') and c.type == 'A' and 'projector' not in c.tools):
-                return True
+                                                                                                               cc.type == 'SG') and c.type == 'A' and 'projector' not in c.tools):
+            return True
         if c.type == "T" and cc.type == "T":
             return True
         if c.type == "SG" and cc.type == "SG":
             return True
-        if ((c.type == 'T' and cc.type == 'R') or (c.type == 'R' and cc.type == 'T')) and c.day == cc.day and c.time_slot == cc.time_slot:
+        if ((c.type == 'T' and cc.type == 'R') or (
+                c.type == 'R' and cc.type == 'T')) and c.day == cc.day and c.time_slot == cc.time_slot:
             return True
         if c.type == 'T' and cc.type == 'SG':
             nr_courses_taken_by_brothers = 0
             for con in cc.owner.CB:
-                if con.type == 'B' and con.teacher == c.teacher:
+                if con.type == 'B' and con.teacher == c.teacher and con.owner_name != cc.owner.name:
                     nr_courses_taken_by_brothers += 1
-            print("Constraints induced by brothers for sg {} for teacher {} = {}".format(cc.owner.name, c.teacher, nr_courses_taken_by_brothers))
+            # print("Constraints induced by brothers for sg {} for teacher {} = {}".format(cc.owner.name, c.teacher, nr_courses_taken_by_brothers))
             if cc.tc_avail[c.teacher] - 1 - nr_courses_taken_by_brothers < 0:
                 return True
         if cc.type == 'T' and c.type == 'SG':
             nr_courses_taken_by_brothers = 0
             for con in c.owner.CB:
-                if con.type == 'B' and con.teacher == cc.teacher:
+                if con.type == 'B' and con.teacher == cc.teacher and con.owner_name != c.owner.name:
                     nr_courses_taken_by_brothers += 1
-            print("Constraints induced by brothers for sg {} for teacher {} = {}".format(c.owner.name, cc.teacher,
-                                                                                         nr_courses_taken_by_brothers))
+            # print("Constraints induced by brothers for sg {} for teacher {} = {}".format(c.owner.name, cc.teacher,
+            #                                                                              nr_courses_taken_by_brothers))
             if c.tc_avail[cc.teacher] - 1 - nr_courses_taken_by_brothers < 0:
                 return True
+        if c.type == 'T' and cc.type == 'R':
+            for con in c.owner.CB:
+                if con.type == 'I' and con.cell.day == cc.day and con.cell.time_slot == cc.time_slot and \
+                                con.owner.ra_id == c.owner.ra_id and c.owner.id != con.owner.id and con.cell.room != cc.room:
+                    return True
+        if cc.type == 'T' and c.type == 'R':
+            for con in cc.owner.CB:
+                if con.type == 'I' and con.cell.day == c.day and con.cell.time_slot == c.time_slot and \
+                                con.owner.ra_id == cc.owner.ra_id and cc.owner.id != con.owner.id:
+                    return True
+        if c.type == 'SG' and cc.type == 'R':
+            for con in c.owner.CB:
+                if con.type == 'I' and con.cell.day == cc.day and con.cell.time_slot == cc.time_slot and \
+                                con.owner.ra_id == c.owner.ra_id and c.owner.id != con.owner.id and con.cell.room != cc.room:
+                    return True
+        if cc.type == 'SG' and c.type == 'R':
+            for con in cc.owner.CB:
+                if con.type == 'I' and con.cell.day == c.day and con.cell.time_slot == c.time_slot and \
+                                con.owner.ra_id == cc.owner.ra_id and cc.owner.id != con.owner.id and con.cell.room != cc.room:
+                    return True
         return False
-
-
-

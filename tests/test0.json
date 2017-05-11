@@ -1,6 +1,6 @@
 {
-  "occupancy": 18,
-  "nb_days": 2,
+  "occupancy": 9,
+  "nb_days": 1,
   "nb_rooms": 3,
 
   "nb_teachers": 3,
@@ -16,14 +16,9 @@
             "day": 0,
             "time_slot": 3,
             "teacher": 0
-          },
-          {
-            "day": 1,
-            "time_slot": 2,
-            "teacher": 0
           }
         ],
-        "nb_courses": 6
+        "nb_courses": 3
       },
       {
         "constraints":
@@ -32,14 +27,9 @@
             "day": 0,
             "time_slot": 3,
             "teacher": 1
-          },
-          {
-            "day": 1,
-            "time_slot": 1,
-            "teacher": 1
           }
         ],
-        "nb_courses": 6
+        "nb_courses": 3
       },
       {
         "constraints":
@@ -48,40 +38,35 @@
             "day": 0,
             "time_slot": 2,
             "teacher": 2
-          },
-          {
-            "day": 1,
-            "time_slot": 0,
-            "teacher": 2
           }
         ],
-        "nb_courses": 6
+        "nb_courses": 3
       }
     ],
     "SG": [
       {
         "constraints": [
           {
-            "T_courses_availability": [2, 2, 2]
+            "T_courses_availability": [1, 1, 1]
           }
         ],
-        "nb_courses": 6
+        "nb_courses": 3
       },
       {
         "constraints": [
           {
-            "T_courses_availability": [2, 2, 2]
+            "T_courses_availability": [1, 1, 1]
           }
         ],
-        "nb_courses": 6
+        "nb_courses": 3
       },
       {
         "constraints": [
           {
-            "T_courses_availability": [2, 2, 2]
+            "T_courses_availability": [1, 1, 1]
           }
         ],
-        "nb_courses": 6
+        "nb_courses": 3
       }
     ]
   },

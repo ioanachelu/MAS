@@ -1,0 +1,58 @@
+{
+  "occupancy": 4,
+  "nb_days": 1,
+  "nb_rooms": 2,
+
+  "nb_teachers": 2,
+  "nb_st_groups": 2,
+
+  "nb_time_slots": 3,
+  "ra_constraints": {
+    "T": [
+      {
+        "constraints":
+        [
+          {
+            "day": 0,
+            "time_slot": 0,
+            "teacher": 0
+          }
+        ],
+        "nb_courses": 2
+      },
+      {
+        "constraints":
+        [
+          {
+            "day": 0,
+            "time_slot": 2,
+            "teacher": 1
+          }
+        ],
+        "nb_courses": 2
+      }
+    ],
+    "SG": [
+      {
+        "constraints": [
+          {
+            "T_courses_availability": [1, 1]
+          }
+        ],
+        "nb_courses": 2
+      },
+      {
+        "constraints": [
+          {
+            "T_courses_availability": [1, 1]
+          }
+        ],
+        "nb_courses": 2
+      }
+    ]
+  },
+  "cell_constraints": {
+    "unavailability": [],
+    "tools_availability": []
+  }
+}

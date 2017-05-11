@@ -1,7 +1,7 @@
 import argparse
 from read_input import read_test
 from environment import Environment
-
+import sys
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -16,6 +16,10 @@ def get_arguments():
 
 
 if __name__ == '__main__':
+    # orig_stdout = sys.stdout
+    # f = open('out.txt', 'w')
+    # sys.stdout = f
+
     args = get_arguments()
     rules = read_test(args.test)
     environment = Environment(rules)
