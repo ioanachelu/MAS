@@ -270,10 +270,13 @@ class Cell():
 
     def set_unavailability_constraints(self):
         for constr in self.rules["cell_constraints"]["unavailability"]:
-            c = Constraint("U", day=constr["day"],
-                           time_slot=constr["time_slot"],
-                           teacher=constr["room"], weight=2)
-            self.C.append(c)
+            if constr["day"] == self.day and \
+                    constr["time_slot"] == self.time_slot and \
+                    constr["room"] == self.room:
+                c = Constraint("U", day=constr["day"],
+                               time_slot=constr["time_slot"],
+                               teacher=constr["room"], weight=2)
+                self.C.append(c)
 
     def set_tools_constraints(self):
         for constr in self.rules["cell_constraints"]["tools_availability"]:

@@ -1,4 +1,6 @@
 {
+  "stop": 0,
+  "relax": 1,
   "occupancy": 18,
   "nb_days": 2,
   "nb_rooms": 3,

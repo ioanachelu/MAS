@@ -15,6 +15,7 @@ class BA():
         self.proxy = ra
         self.id = id
         self.rules = rules
+        self.relax = self.rules["relax"]
         self.name = self.type + str(self.ra_id) + "_" + str(self.id)
         # current cell the agent is in
         self.cell = cell
@@ -59,7 +60,7 @@ class BA():
             for room in range(self.rules["nb_rooms"]):
                 for time_slot in range(self.rules["nb_time_slots"]):
                     cell = self.env.get_cell([day, room, time_slot])
-                    if BA.compatible_cell(self, cell):
+                    if BA.compatible_cell(self, cell, self.relax):
                         ok = True
         if ok == False:
             print("zis is bad")
@@ -265,7 +266,7 @@ class BA():
         # my reservation goal is not achieved and...
         # the current cell is not already reserved by some other dude..
         # than book that damn thing immediately
-        if BA.compatible_cell(self, self.cell) and not self.reservation and self.cell.reservation is None:
+        if BA.compatible_cell(self, self.cell, self.relax) and not self.reservation and self.cell.reservation is None:
             self.reserve_crt_cell()
             return 1
 
@@ -273,18 +274,18 @@ class BA():
         # I already have a reservation and it's not this one and..
         # the cost of the current cell is lower than the cost of my current reservation...
         # reserve this cell instead
-        if BA.compatible_cell(self, self.cell) and \
+        if BA.compatible_cell(self, self.cell, self.relax) and \
                 (self.reservation and self.cell != self.rCell and (
                     BA.rCost(self, self.cell) < BA.rCost(self, self.rCell))):
             self.reserve_crt_cell()
             return 1
 
-        if BA.compatible_cell(self, self.cell) and \
+        if BA.compatible_cell(self, self.cell, self.relax) and \
             (not self.reservation and (BA.rCost(self, self.cell) <= BA.rCost(self.cell.reservation, self.cell))):
             self.reserve_crt_cell()
             return 1
 
-        if BA.compatible_cell(self, self.cell) and \
+        if BA.compatible_cell(self, self.cell, self.relax) and \
                 (self.reservation and self.cell != self.rCell and self.cell.reservation is not None and
                      (BA.rCost(self, self.cell) <= BA.rCost(self.cell.reservation, self.cell)) and
                      (BA.rCost(self, self.cell) <= BA.rCost(self, self.rCell))):
@@ -329,9 +330,9 @@ class BA():
             # if partner is not compatible
             # or I already acieved the partnership goal and my partner is better than the new opportunity in front of me
             # ignore this guy
-            if not BA.compatible(self, baj) or (
+            if not BA.compatible(self, baj, self.relax) or (
                         self.partner and BA.pCost(self, baj) >= BA.pCost(self, self.partnership)):
-                if not BA.compatible(self, baj) and self.reservation and BA.compatible_without_his_reservation(self, baj):
+                if not BA.compatible(self, baj, self.relax) and self.reservation and BA.compatible_without_his_reservation(self, baj, self.relax):
                     self.partner_with(baj)
                     return 1
                 # self.knows.extend(baj.knows)
@@ -411,35 +412,35 @@ class BA():
         self.move_to(choosen_cell)
 
     @staticmethod
-    def compatible_cell(bai, cj):
-        return len(BA.NC_cell(bai, cj)) == 0
+    def compatible_cell(bai, cj, relax=False):
+        return len(BA.NC_cell(bai, cj, relax)) == 0
 
     @staticmethod
-    def compatible(bai, baj):
-        return bai.type != baj.type and len(BA.NC_ba(bai, baj)) == 0
+    def compatible(bai, baj, relax=False):
+        return bai.type != baj.type and len(BA.NC_ba(bai, baj, relax)) == 0
 
     @staticmethod
-    def compatible_without_his_reservation(bai, baj):
-        rez = bai.type != baj.type and len(BA.NC_ba_without_his_reservation(bai, baj)) == 0
+    def compatible_without_his_reservation(bai, baj, relax=False):
+        rez = bai.type != baj.type and len(BA.NC_ba_without_his_reservation(bai, baj, relax)) == 0
         if rez:
             print("sdasfas")
         return rez
 
     @staticmethod
-    def NC_ba(bai, baj):
+    def NC_ba(bai, baj, relax=False):
         return BA.nonCompatible(bai.CI + bai.get_induced_constraints() + bai.CR,
-                                baj.CI + baj.get_induced_constraints() + baj.CR)
+                                baj.CI + baj.get_induced_constraints() + baj.CR, relax)
 
     @staticmethod
-    def NC_ba_without_his_reservation(bai, baj):
+    def NC_ba_without_his_reservation(bai, baj, relax=False):
         return BA.nonCompatible(bai.CI + bai.get_induced_constraints() + bai.CR,
-                                baj.CI + baj.get_induced_constraints(), no_rez=True)
+                                baj.CI + baj.get_induced_constraints(), relax)
 
     @staticmethod
-    def NC_cell(bai, cj):
+    def NC_cell(bai, cj, relax=False):
         if cj is None:
             return None
-        return BA.nonCompatible(bai.CI + bai.get_induced_constraints() + bai.CP, cj.C)
+        return BA.nonCompatible(bai.CI + bai.get_induced_constraints() + bai.CP, cj.C, relax)
 
     @staticmethod
     def rCost(bai, cj):
@@ -456,16 +457,16 @@ class BA():
         return cost
 
     @staticmethod
-    def nonCompatible(Ci, Cj, no_rez=False):
-        non_c = [c for c in Ci if BA.nonCompatible_constraint_with_set(c, Cj, no_rez)]
+    def nonCompatible(Ci, Cj, relax=False):
+        non_c = [c for c in Ci if BA.nonCompatible_constraint_with_set(c, Cj, relax)]
         return non_c
 
 
     @staticmethod
-    def nonCompatible_constraint_with_set(c, Cj, no_rez=False):
+    def nonCompatible_constraint_with_set(c, Cj, relax=False):
         res = []
         for cc in Cj:
-            if BA.nonCompatible_constraints(c, cc, no_rez):
+            if BA.nonCompatible_constraints(c, cc, relax):
                 res.append(c)
                 break
 
@@ -473,18 +474,18 @@ class BA():
 
 
     @staticmethod
-    def nonCompatible_constraints(c, cc, no_rez=False):
-        if cc.type == "U" or c.type == "U":
+    def nonCompatible_constraints(c, cc, relax=False):
+        if cc.type == "U" or c.type == "U" and not relax:
             return True
-        if ((c.type == "T" or c.type == "SG") and cc.type == "A" and 'projector' not in cc.tools) or ((cc.type == 'T' or
-                                                                                                               cc.type == 'SG') and c.type == 'A' and 'projector' not in c.tools):
+        if not relax and (((c.type == "T" or c.type == "SG") and cc.type == "A" and 'projector' not in cc.tools) or ((cc.type == 'T' or
+                                                                                                               cc.type == 'SG') and c.type == 'A' and 'projector' not in c.tools)):
             return True
         if c.type == "T" and cc.type == "T":
             return True
         if c.type == "SG" and cc.type == "SG":
             return True
         if ((c.type == 'T' and cc.type == 'R') or (
-                c.type == 'R' and cc.type == 'T')) and c.day == cc.day and c.time_slot == cc.time_slot:
+                c.type == 'R' and cc.type == 'T')) and c.day == cc.day and c.time_slot == cc.time_slot and not relax:
             return True
         if c.type == 'T' and cc.type == 'SG':
             nr_courses_taken_by_brothers = 0

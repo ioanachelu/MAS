@@ -1,7 +1,8 @@
 import argparse
-from read_input import read_test
-from environment import Environment
+
+from timetable_gui import Timetable
 import sys
+import tkinter as tk
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -10,7 +11,7 @@ def get_arguments():
       A list of parsed arguments.
     """
     parser = argparse.ArgumentParser(description="Emergent Timetable")
-    parser.add_argument("--test", type=str, default="test1",
+    parser.add_argument("--test", type=str, default="test2",
                         help="Name of the test to be ran")
     return parser.parse_args()
 
@@ -21,6 +22,7 @@ if __name__ == '__main__':
     # sys.stdout = f
 
     args = get_arguments()
-    rules = read_test(args.test)
-    environment = Environment(rules)
-    environment.step()
+
+    root = tk.Tk()
+    app = Timetable(args, master=root)
+    app.mainloop()
