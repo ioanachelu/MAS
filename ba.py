@@ -69,6 +69,18 @@ class BA():
     def modify_induced_constraints(self, CB):
         self.CB = CB
 
+    def remove_constraint(self, con):
+        for constr in self.CI:
+            if self.type == "T" and constr.type == self.type and constr.day == con["day"] and \
+                            constr.time_slot == con["time_slot"] and constr.teacher == con["teacher"]:
+                self.CI.remove(constr)
+            elif constr.type == self.type and constr.tc_avail == con["T_courses_availability"]:
+                self.CI.remove(constr)
+
+    def add_constraint(self, con):
+        con.owner = self
+        self.CI.append(con)
+
     def get_induced_constraints(self):
         return self.CB
 

@@ -1,4 +1,5 @@
 from ra import RA
+from ba import BA
 from collections import deque
 import time
 import threading
@@ -81,19 +82,19 @@ class Environment():
     #             exit(0)
 
     def print_pawns(self, time):
-        double_line = '=' * (5 + 1 + (35 + 2 + 8) * self.rules["nb_rooms"])
-        anchor = ' ' * int((5 + 1 + (35 + 2 + 8) * self.rules["nb_rooms"] - 7) / 2 - 2)
+        double_line = '=' * (5 + 1 + (53 + 2) * self.rules["nb_rooms"])
+        anchor = ' ' * int((5 + 1 + (53 + 2) * self.rules["nb_rooms"] - 7) / 2 - 2)
         print(double_line)
         print(('||' + anchor + " TIME {} " + anchor + '||').format(time))
         print(double_line)
         time_slot_encoder = [" 8-10", "10-12", "14-16", "16–18"]
-        table_header = ">" * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
-        table_footer = "<" * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
+        table_header = ">" * (5 + 2 + (53 + 2) * self.rules["nb_rooms"])
+        table_footer = "<" * (5 + 2 + (53 + 2) * self.rules["nb_rooms"])
         print(bcolors.WARNING + table_header + bcolors.ENDC)
         for day in range(self.rules["nb_days"]):
-            line = '-' * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
-            double_line = '=' * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
-            anchor = ' ' * int((5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"] - 7) / 2 - 2)
+            line = '-' * (5 + 2 + (53 + 2) * self.rules["nb_rooms"])
+            double_line = '=' * (5 + 2 + (53 + 2) * self.rules["nb_rooms"])
+            anchor = ' ' * int((5 + 2 + (53 + 2) * self.rules["nb_rooms"] - 7) / 2 - 2)
             print(double_line)
             print(('||' + anchor + " DAY {} " + anchor + '||').format(day))
             print(double_line)
@@ -126,30 +127,47 @@ class Environment():
                         info_grid[-1].append(", ".join(info_bas))
                         #info_grid[-1].append(", ".join([ba.name for ba in cell.bas]))
 
+                    text = ""
+                    violated_constraints = 0
+
                     if cell.reservation:
+                        one = cell.reservation.name
+                        violated_constraints += len(BA.NC_cell(cell.reservation, cell))
+
                         if cell.reservation.partner:
-                            info_rez[-1].append(cell.reservation.name + "/" + cell.reservation.partnership.name)
+                            two = cell.reservation.partnership.name
+                            # info_rez[-1].append(cell.reservation.name + "/" + cell.reservation.partnership.name)
+                            text += one + "/" + two
+                            violated_constraints += len(BA.NC_ba(cell.reservation, cell.reservation.partnership))
                         else:
-                            info_rez[-1].append(cell.reservation.name + "/None")
+                            # info_rez[-1].append(cell.reservation.name + "/None")
+                            text += one + "/None"
                     else:
-                        info_rez[-1].append("None/None")
+                        # info_rez[-1].append("None/None")
+                        text += "None/None"
+
+                    if violated_constraints == 0:
+                        info_rez[-1].append(bcolors.OKBLUE + text + bcolors.ENDC)
+                    else:
+                        info_rez[-1].append(bcolors.FAIL + text + bcolors.ENDC)
+
 
             header = "|T / R|"
             for i in range(self.rules["nb_rooms"]):
-                header += "|                     {}                     |".format(i)
+                header += "|                          {}                          |".format(i)
             print(header)
             print(line)
 
             for time_slot, rooms in enumerate(info_grid):
                 row = "|{}|".format(time_slot_encoder[time_slot])
                 for t in rooms:
-                    row += "|{}|".format(t.ljust(35 + 8))
+                    row += "|{}|".format(t.ljust(53))
                 print(row)
 
-                row_rez = "|{}|".format(time_slot_encoder[time_slot])
+                row_rez = bcolors.OKBLUE + "|{}|".format(time_slot_encoder[time_slot]) + bcolors.ENDC
                 for t in info_rez[time_slot]:
-                    row_rez += "|{}|".format(t.ljust(35 + 8))
-                print(bcolors.OKBLUE + row_rez + bcolors.ENDC)
+                    row_rez += "|{}|".format(t.ljust(53 + 9))
+                print(row_rez)
                 print(line)
                 # print("--- ROOM {} ---".format(room))
                 # for time_slot in range(self.rules["nb_time_slots"]):
@@ -171,8 +189,8 @@ class Environment():
                     cell = self.get_cell([day, room, time_slot])
                     if cell.reservation is not None and cell.reservation.partner:
                         booked += 1
-        double_line = '=' * (5 + 1 + (35 + 2 + 8) * self.rules["nb_time_slots"])
-        anchor = ' ' * int((5 + 1 + (35 + 2 + 8) * self.rules["nb_time_slots"] - 7) / 2 - 2)
+        double_line = '=' * (5 + 1 + (53 + 2) * self.rules["nb_rooms"])
+        anchor = ' ' * int((5 + 1 + (53 + 2) * self.rules["nb_rooms"] - 7) / 2 - 2)
         print(bcolors.FAIL + double_line + bcolors.ENDC)
         print(bcolors.FAIL + ('||' + anchor + " BOOK {} " + anchor + '||').format(booked) + bcolors.ENDC)
         print(bcolors.FAIL + double_line + bcolors.ENDC)
@@ -186,19 +204,19 @@ class Environment():
         return self.grid[directions[0]][directions[1]][directions[2]]
 
     def print_solution(self):
-        double_line = '=' * (5 + 1 + (35 + 2 + 8) * self.rules["nb_rooms"])
-        anchor = ' ' * int((5 + 1 + (35 + 2 + 8) * self.rules["nb_rooms"] - 7) / 2 - 2)
+        double_line = '=' * (5 + 1 + (53 + 2) * self.rules["nb_rooms"])
+        anchor = ' ' * int((5 + 1 + (53 + 2) * self.rules["nb_rooms"] - 7) / 2 - 2)
         print(double_line)
         print(('||' + anchor + " SOLUTION " + anchor + '||'))
         print(double_line)
         time_slot_encoder = [" 8-10", "10-12", "14-16", "16–18"]
-        table_header = ">" * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
-        table_footer = "<" * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
+        table_header = ">" * (5 + 2 + (53 + 2) * self.rules["nb_rooms"])
+        table_footer = "<" * (5 + 2 + (53 + 2) * self.rules["nb_rooms"])
         print(bcolors.OKGREEN + table_header + bcolors.ENDC)
         for day in range(self.rules["nb_days"]):
-            line = '-' * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
-            double_line = '=' * (5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"])
-            anchor = ' ' * int((5 + 2 + (35 + 2 + 8) * self.rules["nb_rooms"] - 7) / 2 - 2)
+            line = '-' * (5 + 2 + (53 + 2) * self.rules["nb_rooms"])
+            double_line = '=' * (5 + 2 + (53 + 2) * self.rules["nb_rooms"])
+            anchor = ' ' * int((5 + 2 + (53 + 2) * self.rules["nb_rooms"] - 7) / 2 - 2)
             print(double_line)
             print(('||' + anchor + " DAY {} " + anchor + '||').format(day))
             print(double_line)
@@ -209,15 +227,27 @@ class Environment():
                 info_rez.append([])
                 for room in range(self.rules["nb_rooms"]):
                     cell = self.get_cell([day, room, time_slot])
+                    text = ""
+                    violated_constraints = 0
                     if cell.reservation:
                         one = cell.reservation.type + str(cell.reservation.ra_id + 1)
+                        violated_constraints += len(BA.NC_cell(cell.reservation, cell))
                         if cell.reservation.partner:
                             two = cell.reservation.partnership.type + str(cell.reservation.partnership.ra_id + 1)
-                            info_rez[-1].append(one + "/" + two)
+                            # info_rez[-1].append(one + "/" + two)
+                            text += one + "/" + two
+                            violated_constraints += len(BA.NC_ba(cell.reservation, cell.reservation.partnership))
                         else:
-                            info_rez[-1].append(one + "/None")
+                            # info_rez[-1].append(one + "/None")
+                            text += one + "/None"
                     else:
-                        info_rez[-1].append("None/None")
+                        # info_rez[-1].append("None/None")
+                        text += "None/None"
+
+                    if violated_constraints == 0:
+                        info_rez[-1].append(bcolors.OKGREEN + text + bcolors.ENDC)
+                    else:
+                        info_rez[-1].append(bcolors.FAIL + text + "({})".format(violated_constraints) + bcolors.ENDC)
 
             header = "|T / R|"
             for i in range(self.rules["nb_rooms"]):
@@ -228,8 +258,8 @@ class Environment():
             for time_slot, rooms in enumerate(info_grid):
                 row_rez = "|{}|".format(time_slot_encoder[time_slot])
                 for t in info_rez[time_slot]:
-                    row_rez += "|{}|".format(t.ljust(35 + 8))
-                print(bcolors.FAIL + row_rez + bcolors.ENDC)
+                    row_rez += "|{}|".format(t.ljust(53))
+                print(row_rez)
                 print(line)
                 # print("--- ROOM {} ---".format(room))
                 # for time_slot in range(self.rules["nb_time_slots"]):
@@ -238,6 +268,22 @@ class Environment():
                 #     for ba in cell.bas:
                 #         print(ba.name)
         print(bcolors.OKGREEN + table_footer + bcolors.ENDC)
+
+    def remove_cell_unavailability_constraint(self, con):
+        for day in range(self.rules["nb_days"]):
+            for room in range(self.rules["nb_rooms"]):
+                for time_slot in range(self.rules["nb_time_slots"]):
+                    if con["day"] == day and con["time_slot"] == time_slot and con["room"] == room:
+                        cell = self.get_cell([day, room, time_slot])
+                        cell.remove_cell_unavailability_constraint()
+
+    def add_cell_constraint(self, con):
+        for day in range(self.rules["nb_days"]):
+            for room in range(self.rules["nb_rooms"]):
+                for time_slot in range(self.rules["nb_time_slots"]):
+                    if con["day"] == day and con["time_slot"] == time_slot and con["room"] == room:
+                        cell = self.get_cell([day, room, time_slot])
+                        cell.add_cell_unavailability_constraint(con)
 
 class Cell():
     lock = threading.RLock()
@@ -275,7 +321,7 @@ class Cell():
                     constr["room"] == self.room:
                 c = Constraint("U", day=constr["day"],
                                time_slot=constr["time_slot"],
-                               teacher=constr["room"], weight=2)
+                               teacher=constr["room"], weight=1)
                 self.C.append(c)
 
     def set_tools_constraints(self):
@@ -283,8 +329,25 @@ class Cell():
             if self.room == constr["room"]:
                 c = Constraint("A", day=self.day,
                                time_slot=self.time_slot,
-                               room=constr["room"], tools=constr["tools"], weight=2)
+                               room=constr["room"], tools=constr["tools"], weight=1)
                 self.C.append(c)
+
+    def remove_cell_unavailability_constraint(self):
+        for c in self.C:
+            if c.type == "U":
+                self.C.remove(c)
+
+
+    def add_cell_unavailability_constraint(self, constr):
+        c = Constraint("U", day=constr["day"],
+                       time_slot=constr["time_slot"],
+                       teacher=constr["room"], weight=1)
+
+        self.C.append(c)
+
+
+
+
 
 
 

@@ -1,6 +1,6 @@
 {
   "stop": 0,
-  "relax": 1,
+  "relax": 0,
   "occupancy": 4,
   "nb_days": 1,
   "nb_rooms": 2,
@@ -10,10 +10,9 @@
 
   "nb_time_slots": 3,
   "ra_constraints": {
-    "T": [
-      {
-        "constraints":
-        [
+    "T": {
+      "0": {
+        "constraints": [
           {
             "day": 0,
             "time_slot": 0,
@@ -22,9 +21,8 @@
         ],
         "nb_courses": 2
       },
-      {
-        "constraints":
-        [
+      "1": {
+        "constraints": [
           {
             "day": 0,
             "time_slot": 2,
@@ -33,33 +31,35 @@
         ],
         "nb_courses": 2
       }
-    ],
-    "SG": [
-      {
+    },
+    "SG": {
+      "0": {
         "constraints": [
           {
-            "T_courses_availability": [1, 1]
+            "T_courses_availability": [
+              1,
+              1
+            ]
           }
         ],
         "nb_courses": 2
       },
-      {
+      "1": {
         "constraints": [
           {
-            "T_courses_availability": [1, 1]
+            "T_courses_availability": [
+              1,
+              1
+            ]
           }
         ],
         "nb_courses": 2
       }
-    ]
+    }
   },
   "cell_constraints": {
     "unavailability": [
-      {
-        "room": 0,
-        "day": 0,
-        "time_slot": 1
-      }
+
     ],
     "tools_availability": [
       {
@@ -71,7 +71,5 @@
         "tools": ["lecture_room", "projector"]
       }
     ]
-}
-
-
+  }
 }

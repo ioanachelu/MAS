@@ -10,10 +10,9 @@
 
   "nb_time_slots": 4,
   "ra_constraints": {
-    "T": [
-      {
-        "constraints":
-        [
+    "T": {
+      "0": {
+        "constraints": [
           {
             "day": 0,
             "time_slot": 3,
@@ -27,9 +26,8 @@
         ],
         "nb_courses": 6
       },
-      {
-        "constraints":
-        [
+      "1": {
+        "constraints": [
           {
             "day": 0,
             "time_slot": 3,
@@ -43,9 +41,8 @@
         ],
         "nb_courses": 6
       },
-      {
-        "constraints":
-        [
+      "2": {
+        "constraints": [
           {
             "day": 0,
             "time_slot": 2,
@@ -59,8 +56,9 @@
         ],
         "nb_courses": 6
       }
-    ],
-    "SG": [
+    },
+    "SG": {
+      "0":
       {
         "constraints": [
           {
@@ -69,6 +67,7 @@
         ],
         "nb_courses": 6
       },
+      "1":
       {
         "constraints": [
           {
@@ -77,6 +76,7 @@
         ],
         "nb_courses": 6
       },
+      "2":
       {
         "constraints": [
           {
@@ -85,7 +85,7 @@
         ],
         "nb_courses": 6
       }
-    ]
+    }
   },
   "cell_constraints": {
     "unavailability": [],

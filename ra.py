@@ -13,11 +13,12 @@ class RA():
         self.id = id
         self.name = self.type + str(self.id)
         self.rules = rules
-        self.nb_courses = self.rules["ra_constraints"][self.type][id]["nb_courses"]
+        self.nb_courses = self.rules["ra_constraints"][self.type][str(id)]["nb_courses"]
         self.bas = []
         self.build_intrinsic_constraints()
         self.mq = deque()
         self.CB = []
+        self.env = env
 
         # creating BAs for each course of the RA
         for course in range(self.nb_courses):
@@ -37,6 +38,56 @@ class RA():
         # set the RA as alive
         self.alive = True
 
+    def add_bas(self, how_many):
+        to_be_added = []
+        for course in range(how_many):
+            # get random cell
+            cell = self.env.grid[random.randint(0, self.rules["nb_days"] - 1)][random.randint(0, self.rules["nb_rooms"] - 1)][
+                random.randint(0, self.rules["nb_time_slots"] - 1)]
+            # create ba in the random cell
+            ba = BA(self.type, self, course + self.nb_courses, self.rules, cell, self.copy_constraints(self.CI), [], deque(), self.env)
+            to_be_added.append(ba)
+            # add BA to list of BAs of the RA
+            self.bas.append(ba)
+            # add BA to list of BAs in the cell
+            cell.bas.append(ba)
+        self.nb_courses = self.rules["ra_constraints"][self.type][str(self.id)]["nb_courses"]
+        return to_be_added
+
+    def remove_bas(self, how_many):
+        to_be_removed = []
+        # first remove bas not engaged in reservations or partnerships
+        for ba in self.bas:
+            if how_many == 0:
+                break
+            if not ba.reservation and not ba.partner:
+                to_be_removed.append(ba)
+                how_many -= 1
+        if how_many > 0:
+            for ba in self.bas:
+                if how_many == 0:
+                    break
+                to_be_removed.append(ba)
+                how_many -= 1
+
+        for ba in to_be_removed:
+            if ba.partner:
+                ba.cancel_partnership()
+            if ba.reservation:
+                ba.cancel_reservation()
+            ba.cell.bas.remove(ba)
+            self.bas.remove(ba)
+
+        for ba in self.bas:
+            ba.brothers = [baj for baj in self.bas if baj != ba]
+
+        for ba in to_be_removed:
+            for constr in self.CB:
+                if constr.owner == ba:
+                    self.CB.remove(constr)
+
+        return to_be_removed
+
     def copy_constraints(self, CI):
         new_CI = []
         for c in CI:
@@ -51,15 +102,27 @@ class RA():
         self.CI = []
 
         if self.type == "T":
-            for constr in self.rules["ra_constraints"][self.type][self.id]["constraints"]:
+            for constr in self.rules["ra_constraints"][self.type][str(self.id)]["constraints"]:
                 c = Constraint(self.type, day=constr["day"],
                                time_slot=constr["time_slot"],
                                teacher=constr["teacher"])
                 self.CI.append(c)
         else:
-            for constr in self.rules["ra_constraints"][self.type][self.id]["constraints"]:
+            for constr in self.rules["ra_constraints"][self.type][str(self.id)]["constraints"]:
                 c = Constraint(self.type, tc_avail=constr["T_courses_availability"])
                 self.CI.append(c)
+
+    def add_constraint(self, entries):
+        entries = [int(e) for e in entries]
+        if self.type == "T":
+            c = Constraint(self.type, day=entries[0],
+                           time_slot=entries[1],
+                           teacher=self.id)
+        else:
+            c = Constraint(self.type, tc_avail=entries)
+        self.CI.append(c)
+        for ba in self.bas:
+            ba.add_constraint(copy.deepcopy(c))
 
     # add constraints induced by other BAs - reservation constraints.
     # call all the BAs to modify their induced constraints
@@ -67,6 +130,7 @@ class RA():
         self.CB.append(c)
         for ba in self.bas:
             ba.modify_induced_constraints(self.CB)
+
 
     def remove_induced_constraint(self, type, owner):
         for constr in self.CB:
@@ -86,7 +150,7 @@ class RA():
                     print(
                         "RA {} received partnership message from sg {} about adding constraint from teacher {}".format(
                             self.name, sg.name, t.ra_id))
-                    self.add_induced_constraint(Constraint("B", teacher=t.ra_id, owner_name=sg.name))
+                    self.add_induced_constraint(Constraint("B", teacher=t.ra_id, owner_name=sg.name, owner=sg))
             if message.type == 'partnership_cancelation':
                 if self.type == 'SG' and message.sender.type == 'SG':
                     sg = message.sender
@@ -111,3 +175,15 @@ class RA():
     # start BAs. Then continually process messages while alive
     def perceive(self):
         self.process_messages()
+
+    def remove_constraint(self, ra_type, id, i, con):
+        for constr in self.CI:
+            if ra_type == "T" and constr.type == ra_type and constr.day == con["day"] and \
+                constr.time_slot == con["time_slot"] and constr.teacher == con["teacher"]:
+                self.CI.remove(constr)
+            elif constr.type == ra_type and constr.tc_avail == con["T_courses_availability"]:
+                self.CI.remove(constr)
+        for ba in self.bas:
+            ba.remove_constraint(con)
+
+
