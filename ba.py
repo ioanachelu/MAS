@@ -293,14 +293,14 @@ class BA():
             return 1
 
         if BA.compatible_cell(self, self.cell, self.relax) and \
-            (not self.reservation and (BA.rCost(self, self.cell) <= BA.rCost(self.cell.reservation, self.cell))):
+            (not self.reservation and (BA.rCost(self, self.cell) < BA.rCost(self.cell.reservation, self.cell))):
             self.reserve_crt_cell()
             return 1
 
         if BA.compatible_cell(self, self.cell, self.relax) and \
                 (self.reservation and self.cell != self.rCell and self.cell.reservation is not None and
-                     (BA.rCost(self, self.cell) <= BA.rCost(self.cell.reservation, self.cell)) and
-                     (BA.rCost(self, self.cell) <= BA.rCost(self, self.rCell))):
+                     (BA.rCost(self, self.cell) < BA.rCost(self.cell.reservation, self.cell)) and
+                     (BA.rCost(self, self.cell) < BA.rCost(self, self.rCell))):
             self.reserve_crt_cell()
             return 1
 
@@ -385,7 +385,8 @@ class BA():
                     self.move_to(self.rCell)
                 self.add_bas_to_memory()
             else:
-                print("Reservation is not optimal. Adding BAs to memory an processing current cell")
+                print("Reservation is not optimal. Exploring other opportunities")
+                # self.explore()
                 self.add_bas_to_memory()
                 rez = self.process_crt_cell()
                 if rez == 0:
@@ -393,7 +394,6 @@ class BA():
                 if rez == 2:
                     print("Moving along. Brothers in cell")
         else:
-            # randomly sample a next cell. TODO: skip the one I know are no good. Maybe later when introducing cell constraints
             self.explore()
             self.add_bas_to_memory()  # analyse bas which are in the cell
             rez = self.process_encountered_bas()  # verify whether they fit with constraints

@@ -2,12 +2,14 @@ import tkinter as tk
 from read_input import read_test
 from environment import Environment
 from dialog import ConstraintDialog
+from tkinter import messagebox
 
 class Timetable(tk.Frame):
     def __init__(self, args, master=None):
         super().__init__(master)
         self.args = args
         self.root = master
+        self.old_violated_constraints = None
 
         self.setup()
         # if self.rules["stop"]:
@@ -23,6 +25,11 @@ class Timetable(tk.Frame):
         self.environment.print_info(self.time)
         self.current_ba = 0
         self.running = False
+
+    def relax_cb(self):
+        # print("variable is", self.relax_var.get())
+        self.rules["relax"] = int(self.relax_var.get())
+        print("variable is", self.rules["relax"])
 
     def create_widgets(self):
         self.frame = tk.Frame(self.root)
@@ -47,9 +54,15 @@ class Timetable(tk.Frame):
         self.quit_button.grid(row=0, column=3)
 
         self.relax = bool(self.rules["relax"])
-        self.relax_label = tk.Label(self.frame,
-              text="Relax: " + str(self.relax),
-              font="Times").grid(row=1, column=0)
+        # self.relax_label = tk.Label(self.frame,
+        #       text="Relax: " + str(self.relax),
+        #       font="Times").grid(row=1, column=0)
+
+        self.relax_var = tk.BooleanVar()
+        self.relax_var.set(bool(self.relax))
+        relax_checkb = tk.Checkbutton(self.frame, variable=self.relax_var,
+                                      text="Relax constraints", font="Times", command=self.relax_cb)
+        relax_checkb.grid(row=1, column=0)
 
         self.nb_teachers = self.rules["nb_teachers"]
         self.nb_teachers_label = tk.Label(self.frame,
@@ -197,6 +210,12 @@ class Timetable(tk.Frame):
 
         return row
 
+    def should_continue(self):
+        if messagebox.askyesno("Continue", "Found a solution. Continue searching?"):
+            return True
+        else:
+            return False
+
     def play(self):
         self.running = True
         self.root.after(10, self.loop)
@@ -215,7 +234,14 @@ class Timetable(tk.Frame):
         ba.step()
         print("BA {} acted".format(ba.name))
         self.environment.perceive_cycle()
-        self.environment.print_info(self.time)
+        self.violated_constraints = self.environment.print_info(self.time)
+        if self.violated_constraints == 0:
+            exit(0)
+        if self.violated_constraints > 0 and (self.old_violated_constraints is None or
+                                                  (self.old_violated_constraints is not None and self.violated_constraints < self.old_violated_constraints)):
+            self.old_violated_constraints = self.violated_constraints
+            if not self.should_continue():
+                exit(0)
         self.current_ba += 1
         if self.current_ba == len(self.environment.all_bas):
             self.current_ba = 0
@@ -231,7 +257,11 @@ class Timetable(tk.Frame):
                 #     exit(0)
                 print("BA {} acted".format(ba.name))
                 self.environment.perceive_cycle()
-                self.environment.print_info(self.time)
+                self.violated_constraints = self.environment.print_info(self.time)
+                if self.violated_constraints > 0 and self.old_violated_constraints is not None and self.violated_constraints != self.old_violated_constraints:
+                    self.old_violated_constraints = self.violated_constraints
+                    if not self.should_continue():
+                        exit(0)
             self.time += 1
 
 

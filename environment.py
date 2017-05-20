@@ -195,8 +195,10 @@ class Environment():
         print(bcolors.FAIL + ('||' + anchor + " BOOK {} " + anchor + '||').format(booked) + bcolors.ENDC)
         print(bcolors.FAIL + double_line + bcolors.ENDC)
         if booked == self.rules["occupancy"]:
-            self.print_solution()
-            exit(0)
+            violated_constraints = self.print_solution()
+            return violated_constraints
+        return -1
+            # exit(0)
 
         # self.print_board()
 
@@ -204,6 +206,7 @@ class Environment():
         return self.grid[directions[0]][directions[1]][directions[2]]
 
     def print_solution(self):
+        total_violated_constraints = 0
         double_line = '=' * (5 + 1 + (53 + 2) * self.rules["nb_rooms"])
         anchor = ' ' * int((5 + 1 + (53 + 2) * self.rules["nb_rooms"] - 7) / 2 - 2)
         print(double_line)
@@ -226,12 +229,13 @@ class Environment():
                 info_grid.append([])
                 info_rez.append([])
                 for room in range(self.rules["nb_rooms"]):
+                    violated_constraints = 0
                     cell = self.get_cell([day, room, time_slot])
                     text = ""
-                    violated_constraints = 0
+
                     if cell.reservation:
                         one = cell.reservation.type + str(cell.reservation.ra_id + 1)
-                        violated_constraints += len(BA.NC_cell(cell.reservation, cell))
+                        # violated_constraints += len(BA.NC_cell(cell.reservation, cell))
                         if cell.reservation.partner:
                             two = cell.reservation.partnership.type + str(cell.reservation.partnership.ra_id + 1)
                             # info_rez[-1].append(one + "/" + two)
@@ -248,6 +252,7 @@ class Environment():
                         info_rez[-1].append(bcolors.OKGREEN + text + bcolors.ENDC)
                     else:
                         info_rez[-1].append(bcolors.FAIL + text + "({})".format(violated_constraints) + bcolors.ENDC)
+                    total_violated_constraints += violated_constraints
 
             header = "|T / R|"
             for i in range(self.rules["nb_rooms"]):
@@ -268,6 +273,8 @@ class Environment():
                 #     for ba in cell.bas:
                 #         print(ba.name)
         print(bcolors.OKGREEN + table_footer + bcolors.ENDC)
+
+        return total_violated_constraints
 
     def remove_cell_unavailability_constraint(self, con):
         for day in range(self.rules["nb_days"]):
