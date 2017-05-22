@@ -73,7 +73,20 @@
     }
   },
   "cell_constraints": {
-    "unavailability": [],
+    "unavailability": [
+      {
+        "room": 0,
+        "day": 0,
+        "time_slot": 1
+      },
+      {
+        "room": 2,
+        "day": 0,
+        "time_slot": 2
+      }
+    ],
     "tools_availability": []
-  }
+}
+
+
 }

@@ -120,7 +120,7 @@
       },
       {
         "room": 2,
-        "day": 0,
+        "day": 1,
         "time_slot": 3
       }
     ],
@@ -135,7 +135,7 @@
       },
       {
         "room": 2,
-        "tools": ["laboratory"]
+        "tools": ["lecture_room", "projector"]
       }
 
     ]

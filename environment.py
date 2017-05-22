@@ -4,6 +4,7 @@ from collections import deque
 import time
 import threading
 from utils import Constraint
+import itertools
 
 class bcolors:
     HEADER = '\033[95m'
@@ -44,6 +45,11 @@ class Environment():
                     c = Cell(day, room, time_slot, self.rules)
                     self.grid[-1][-1].append(c)
 
+    def set_relax(self):
+        for ba in self.all_bas:
+            ba.relax = bool(self.rules["relax"])
+
+
     def step(self):
         time = 0
         self.print_info(time)
@@ -54,7 +60,7 @@ class Environment():
                 # if not rez:
                 #     print("DEADLOCK")
                 #     exit(0)
-                print("BA {} acted".format(ba.name))
+                print("[Info] BA {} acted".format(ba.name))
                 self.perceive_cycle()
                 self.print_info(time)
             time += 1
@@ -229,30 +235,34 @@ class Environment():
                 info_grid.append([])
                 info_rez.append([])
                 for room in range(self.rules["nb_rooms"]):
-                    violated_constraints = 0
+                    violated_constraints = []
                     cell = self.get_cell([day, room, time_slot])
                     text = ""
 
                     if cell.reservation:
+                        violated_constraints.append(BA.NC_cell(cell.reservation, cell))
                         one = cell.reservation.type + str(cell.reservation.ra_id + 1)
                         # violated_constraints += len(BA.NC_cell(cell.reservation, cell))
                         if cell.reservation.partner:
                             two = cell.reservation.partnership.type + str(cell.reservation.partnership.ra_id + 1)
                             # info_rez[-1].append(one + "/" + two)
                             text += one + "/" + two
-                            violated_constraints += len(BA.NC_ba(cell.reservation, cell.reservation.partnership))
+                            violated_constraints.append((BA.NC_ba(cell.reservation, cell.reservation.partnership)))
                         else:
                             # info_rez[-1].append(one + "/None")
                             text += one + "/None"
                     else:
                         # info_rez[-1].append("None/None")
                         text += "None/None"
+                    violated_constraints = list(set(itertools.chain(*violated_constraints)))
+                    violated_constraints = [v for v in violated_constraints if v.type != "I"]
+                    vc = len(violated_constraints)
 
-                    if violated_constraints == 0:
+                    if vc == 0:
                         info_rez[-1].append(bcolors.OKGREEN + text + bcolors.ENDC)
                     else:
-                        info_rez[-1].append(bcolors.FAIL + text + "({})".format(violated_constraints) + bcolors.ENDC)
-                    total_violated_constraints += violated_constraints
+                        info_rez[-1].append(bcolors.FAIL + text + "({})".format(vc) + bcolors.ENDC)
+                    total_violated_constraints += vc
 
             header = "|T / R|"
             for i in range(self.rules["nb_rooms"]):
@@ -305,6 +315,7 @@ class Cell():
         self.reservation = None
         self.set_unavailability_constraints()
         self.set_tools_constraints()
+        self.f = open("messages.txt", "a")
 
     def set_reservation(self, new_value):
         with self.lock:

@@ -148,7 +148,7 @@ class RA():
                     sg = message.sender
                     t = message.partner_of_cell
                     print(
-                        "RA {} received partnership message from sg {} about adding constraint from teacher {}".format(
+                        "[Message] RA {} received partnership message from sg {} about adding constraint from teacher {}".format(
                             self.name, sg.name, t.ra_id))
                     self.add_induced_constraint(Constraint("B", teacher=t.ra_id, owner_name=sg.name, owner=sg))
             if message.type == 'partnership_cancelation':
@@ -156,18 +156,18 @@ class RA():
                     sg = message.sender
                     t = message.partner_of_cell
                     print(
-                        "RA {} received partnership cancelation message from sg {} about removing constraint from teacher {}".format(
+                        "[Message] RA {} received partnership cancelation message from sg {} about removing constraint from teacher {}".format(
                             self.name, sg.name, t.ra_id))
                     self.remove_induced_constraint("B", sg.name)
             if message.type == 'reservation':
                 print(
-                    "RA {} received reservation message from {} about reserving cell DAY {} TIME {} ROOM {}".format(
+                    "[Message] RA {} received reservation message from {} about reserving cell DAY {} TIME {} ROOM {}".format(
                         self.name, message.sender.name, message.partner_of_cell.day, message.partner_of_cell.time_slot,
                         message.partner_of_cell.room))
                 self.add_induced_constraint(Constraint("I", cell=message.partner_of_cell, owner_name=message.sender.name, owner=message.sender))
             if message.type == 'reservation_cancelation':
                 print(
-                    "RA {} received reservation cancelation message from {}".format(
+                    "[Message] RA {} received reservation cancelation message from {}".format(
                         self.name, message.sender.name))
                 self.remove_induced_constraint("I", message.sender.name)
 

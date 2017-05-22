@@ -5,17 +5,24 @@ from dialog import ConstraintDialog
 from tkinter import messagebox
 
 class Timetable(tk.Frame):
-    def __init__(self, args, master=None):
-        super().__init__(master)
+    def __init__(self, args, root=None):
+        tk.Frame.__init__(self, root)
         self.args = args
-        self.root = master
+        self.root = root
+        self.root.geometry("500x500")
         self.old_violated_constraints = None
+        self.canvas = tk.Canvas(self.root, borderwidth=0, background="#ffffff")
+        self.vsb = tk.Scrollbar(self.root, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.vsb.set)
+
+        self.vsb.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+
 
         self.setup()
-        # if self.rules["stop"]:
+
         self.create_widgets()
-        # else:
-        #     self.run_without_stopping()
 
     def setup(self):
         self.rules = read_test(self.args.test)
@@ -30,10 +37,28 @@ class Timetable(tk.Frame):
         # print("variable is", self.relax_var.get())
         self.rules["relax"] = int(self.relax_var.get())
         print("variable is", self.rules["relax"])
+        self.environment.set_relax()
+
+    def onFrameConfigure(self, event):
+        '''Reset the scroll region to encompass the inner frame'''
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def populate(self):
+        '''Put in some fake data'''
+        for row in range(100):
+            tk.Label(self.frame, text="%s" % row, width=3, borderwidth="1",
+                     relief="solid").grid(row=row, column=0)
+            t = "this is the second column for row %s" % row
+            tk.Label(self.frame, text=t).grid(row=row, column=1)
 
     def create_widgets(self):
-        self.frame = tk.Frame(self.root)
-        self.frame.pack()
+
+        self.frame = tk.Frame(self.canvas, background="#ffffff")
+
+        self.frame.bind("<Configure>", self.onFrameConfigure)
+        self.canvas.create_window((4, 4), window=self.frame, anchor="nw",
+                                  tags="self.frame")
+
         self.play_button = tk.Button(self.frame)
         self.play_button["text"] = "Play"
         self.play_button["command"] = self.play
@@ -94,8 +119,7 @@ class Timetable(tk.Frame):
         con = {"day": results[0], "time_slot": results[1], "room": results[2]}
         self.rules["cell_constraints"]["unavailability"].append(con)
         self.environment.add_cell_constraint(con)
-        self.frame.destroy()
-        self.create_widgets()
+        self.refresh()
 
     def add_constraint(self, entries):
         ra_type, id = entries
@@ -108,6 +132,8 @@ class Timetable(tk.Frame):
         for ra in self.environment.ras[ra_type]:
             if ra.id == id:
                 the_ra = ra
+        if inputDialog.result is None:
+            return
         results = [int(e) for e in inputDialog.result]
         if ra_type == "T":
             con = {"day": results[0], "time_slot": results[1], "teacher": id}
@@ -115,7 +141,12 @@ class Timetable(tk.Frame):
             con = {"T_courses_availability": results}
         self.rules["ra_constraints"][ra_type][str(id)]["constraints"].append(con)
         the_ra.add_constraint(results)
+        self.refresh()
+
+    def refresh(self):
+        # self.canvas.delete("all")
         self.frame.destroy()
+        # self.vsb.destroy()
         self.create_widgets()
 
     def set_nb_bas(self, ra_type, id, nb_bas):
@@ -149,8 +180,7 @@ class Timetable(tk.Frame):
     def remove_cell_unavailability_constraint(self, con):
         self.environment.remove_cell_unavailability_constraint(con)
         self.rules["cell_constraints"]["unavailability"].remove(con)
-        self.frame.destroy()
-        self.create_widgets()
+        self.refresh()
 
     def print_constraint(self, ra_type, id, i, con, r):
         if ra_type == "T":
@@ -179,8 +209,7 @@ class Timetable(tk.Frame):
             if ra.id == id:
                 the_ra = ra
         the_ra.remove_constraint(ra_type, id, i, con)
-        self.frame.destroy()
-        self.create_widgets()
+        self.refresh()
         # self.environment.remove_constraint(ra_type, id, i, con)
 
     def print_ra(self, ra_type, id, r):
