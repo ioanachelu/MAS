@@ -11,14 +11,12 @@ class Timetable(tk.Frame):
         self.root = root
         self.root.geometry("500x500")
         self.old_violated_constraints = None
-        self.canvas = tk.Canvas(self.root, borderwidth=0, background="#ffffff")
+        self.canvas = tk.Canvas(self.root, borderwidth=0)
         self.vsb = tk.Scrollbar(self.root, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.vsb.set)
 
         self.vsb.pack(side="right", fill="y")
         self.canvas.pack(side="left", fill="both", expand=True)
-
-
 
         self.setup()
 
@@ -53,7 +51,7 @@ class Timetable(tk.Frame):
 
     def create_widgets(self):
 
-        self.frame = tk.Frame(self.canvas, background="#ffffff")
+        self.frame = tk.Frame(self.canvas)
 
         self.frame.bind("<Configure>", self.onFrameConfigure)
         self.canvas.create_window((4, 4), window=self.frame, anchor="nw",

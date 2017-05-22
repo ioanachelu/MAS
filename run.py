@@ -12,7 +12,7 @@ def get_arguments():
       A list of parsed arguments.
     """
     parser = argparse.ArgumentParser(description="Emergent Timetable")
-    parser.add_argument("--test", type=str, default="test6",
+    parser.add_argument("--test", type=str, default="test1",
                         help="Name of the test to be ran")
     return parser.parse_args()
 
