@@ -53,6 +53,11 @@ class BA():
         # the list of brothers this guy has
         self.brothers = []
 
+    def remove_dead_friends(self, to_be_removed):
+        for ba in self.knows:
+            if ba in to_be_removed:
+                self.knows.remove(ba)
+
     def test_deadlock(self):
         if self.reservation:
             return True

@@ -159,8 +159,11 @@ class Timetable(tk.Frame):
             self.environment.all_bas.extend(to_be_added)
         else:
             to_be_removed = the_ra.remove_bas(old_nb_bas - nb_bas)
+            for ba in self.environment.all_bas:
+                ba.remove_dead_friends(to_be_removed)
             for ba in to_be_removed:
                 self.environment.all_bas.remove(ba)
+            self.environment.perceive_cycle()
 
         self.rules["ra_constraints"][ra_type][str(id)]["nb_courses"] = nb_bas
         self.frame.destroy()
@@ -257,13 +260,18 @@ class Timetable(tk.Frame):
         self.running = False
 
     def step(self):
+        if self.current_ba >= len(self.environment.all_bas):
+            self.current_ba = 0
         ba = self.environment.all_bas[self.current_ba]
         ba.step()
         print("BA {} acted".format(ba.name))
         self.environment.perceive_cycle()
         self.violated_constraints = self.environment.print_info(self.time)
         if self.violated_constraints == 0:
-            exit(0)
+            if not self.should_continue():
+                exit(0)
+            else:
+                self.stop()
         if self.violated_constraints > 0 and (self.old_violated_constraints is None or
                                                   (self.old_violated_constraints is not None and self.violated_constraints < self.old_violated_constraints)):
             self.old_violated_constraints = self.violated_constraints

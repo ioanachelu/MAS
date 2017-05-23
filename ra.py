@@ -79,12 +79,17 @@ class RA():
             self.bas.remove(ba)
 
         for ba in self.bas:
-            ba.brothers = [baj for baj in self.bas if baj != ba]
+            ba.brothers = [baj for baj in self.bas if baj != ba and baj not in to_be_removed]
 
         for ba in to_be_removed:
             for constr in self.CB:
                 if constr.owner == ba:
                     self.CB.remove(constr)
+
+        for ba in self.bas:
+            ba.modify_induced_constraints(self.CB)
+            
+
 
         return to_be_removed
 

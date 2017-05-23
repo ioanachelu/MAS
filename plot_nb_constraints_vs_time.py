@@ -4,7 +4,7 @@ import matplotlib.ticker as mtick
 
 x = [6, 5, 4, 3, 2, 1, 0]
 
-y = [267, 78, 96, 15, 13, 12, 8]
+y = [99, 78, 39, 15, 13, 12, 8]
 # best_x = np.argmin(np.asarray(y))
 # best_y = np.min(np.asarray(y))
 
