@@ -18,18 +18,19 @@ class bcolors:
 
 class Environment():
 
-    def __init__(self, rules):
+    def __init__(self, rules, random_explore):
+        self.random_explore = random_explore
         self.lock = threading.RLock()
         self.rules = rules
         self.build_grid()
         self.all_bas = []
         self.ras = {"T": [], "SG": []}
         for teacher in range(rules["nb_teachers"]):
-            self.ras["T"].append(RA("T", teacher, rules, self))
+            self.ras["T"].append(RA("T", teacher, rules, self, self.random_explore))
             self.all_bas.extend(self.ras["T"][-1].bas)
 
         for st_group in range(rules["nb_st_groups"]):
-            self.ras["SG"].append(RA("SG", st_group, rules, self))
+            self.ras["SG"].append(RA("SG", st_group, rules, self, self.random_explore))
             self.all_bas.extend(self.ras["SG"][-1].bas)
 
         # self.step_count = 0

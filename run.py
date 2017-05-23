@@ -14,6 +14,8 @@ def get_arguments():
     parser = argparse.ArgumentParser(description="Emergent Timetable")
     parser.add_argument("--test", type=str, default="test1",
                         help="Name of the test to be ran")
+    parser.add_argument("--random_exploration", type=bool, default=True,
+                        help="Whether to do random or heuristic exploration")
     return parser.parse_args()
 
 

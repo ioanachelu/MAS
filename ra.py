@@ -7,9 +7,10 @@ import time
 import copy
 
 class RA():
-    def __init__(self, type, id, rules, env):
+    def __init__(self, type, id, rules, env, random_explore):
         # super(RA, self).__init__(name=type + str(id))
         self.type = type
+        self.random_explore = random_explore
         self.id = id
         self.name = self.type + str(self.id)
         self.rules = rules
@@ -25,7 +26,7 @@ class RA():
             # get random cell
             cell = env.grid[random.randint(0, rules["nb_days"]-1)][random.randint(0, rules["nb_rooms"]-1)][random.randint(0, rules["nb_time_slots"]-1)]
             # create ba in the random cell
-            ba = BA(type, self, course, rules, cell, self.copy_constraints(self.CI), [], deque(), env)
+            ba = BA(type, self, course, rules, cell, self.copy_constraints(self.CI), [], deque(), env, self.random_explore)
             # add BA to list of BAs of the RA
             self.bas.append(ba)
             # add BA to list of BAs in the cell
@@ -45,7 +46,7 @@ class RA():
             cell = self.env.grid[random.randint(0, self.rules["nb_days"] - 1)][random.randint(0, self.rules["nb_rooms"] - 1)][
                 random.randint(0, self.rules["nb_time_slots"] - 1)]
             # create ba in the random cell
-            ba = BA(self.type, self, course + self.nb_courses, self.rules, cell, self.copy_constraints(self.CI), [], deque(), self.env)
+            ba = BA(self.type, self, course + self.nb_courses, self.rules, cell, self.copy_constraints(self.CI), [], deque(), self.env, self.random_explore)
             to_be_added.append(ba)
             # add BA to list of BAs of the RA
             self.bas.append(ba)

@@ -5,16 +5,18 @@ from utils import Message
 import time
 import threading
 from utils import Constraint
-
+import numpy as np
 
 class BA():
-    def __init__(self, type, ra, id, rules, cell, CI, CB, mq, env):
+    def __init__(self, type, ra, id, rules, cell, CI, CB, mq, env, random_explore):
         # super(BA, self).__init__(name=type + str(ra.id) + str(id))
+        self.random_explore = random_explore
         self.type = type
         self.ra_id = ra.id
         self.proxy = ra
         self.id = id
         self.rules = rules
+        self.relax = bool(self.rules["relax"])
         self.relax = bool(self.rules["relax"])
         self.name = self.type + str(self.ra_id) + "_" + str(self.id)
         # current cell the agent is in
@@ -424,6 +426,8 @@ class BA():
                     print("[Info] Moving along. Brothers in cell")
 
     def explore(self):
+        if not self.random_explore:
+            return self.explore_heuristicly()
         possibilities = self.get_possibilities()
         pruned_possibilities = []
         for cell in possibilities:
@@ -431,12 +435,51 @@ class BA():
                 pruned_possibilities.append(cell)
         if len(pruned_possibilities) == 0:
             print("[Info] All cells are known. Choosing randomly of the known cells")
-            choosen_cell = random.choice(self.knownCells)
+            cells = self.knownCells
+            choosen_cell = random.choice(cells)
         else:
             print("[Info] Exploring a new cell.")
-            choosen_cell = random.choice(pruned_possibilities)
-            self.knownCells.extend(pruned_possibilities)
+            cells = pruned_possibilities
+            choosen_cell = random.choice(cells)
+            self.knownCells.extend(cells)
         self.move_to(choosen_cell)
+
+    def explore_heuristicly(self):
+        possibilities = self.get_possibilities()
+        pruned_possibilities = []
+        for cell in possibilities:
+            if cell not in self.knownCells:
+                pruned_possibilities.append(cell)
+        if len(pruned_possibilities) == 0:
+            print("[Info] All cells are known. Choosing randomly of the known cells")
+            cells = self.knownCells
+            probabilities = [1 for c in cells]
+            probabilities = self.increase_probabilities_unreserved_cells(probabilities, cells)
+            choosen_cell = np.random.choice(cells, p=probabilities)
+        else:
+            print("[Info] Exploring a new cell.")
+            cells = pruned_possibilities
+            probabilities = [1 for c in cells]
+            probabilities = self.increase_probabilities_unreserved_cells(probabilities, cells)
+            choosen_cell = np.random.choice(cells, p=probabilities)
+            self.knownCells.extend(cells)
+        self.move_to(choosen_cell)
+
+    def softmax(self, x):
+        """Compute softmax values for each sets of scores in x."""
+        e_x = np.exp(x - np.max(x))
+        return e_x / e_x.sum()
+
+    def increase_probabilities_unreserved_cells(self, probabilities, cells):
+        epsilon = 0.2
+        for i, c in enumerate(cells):
+            if c.reservation is None:
+                probabilities[i] += epsilon
+        probabilities = list(self.softmax(probabilities))
+
+        return probabilities
+
+
 
     @staticmethod
     def compatible_cell(bai, cj, relax=False):

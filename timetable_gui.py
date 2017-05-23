@@ -23,8 +23,9 @@ class Timetable(tk.Frame):
         self.create_widgets()
 
     def setup(self):
+        self.random_explore = self.args.random_exploration
         self.rules = read_test(self.args.test)
-        self.environment = Environment(self.rules)
+        self.environment = Environment(self.rules, self.random_explore)
 
         self.time = 0
         self.environment.print_info(self.time)

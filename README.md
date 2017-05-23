@@ -28,6 +28,15 @@ To run a particular test:
 
     $ python run.py --test=test0
     
+To run with random exploration, i.e. if I know all the cells in the perimeter - choose randomly from the known cells. I haven't explored
+all the cells from the perimeter - choose randomly one cell from the perimeter to explore next.
+    
+    $ python run.py --random_exploration=True
+    
+To run with heuristic exploration, i.e. assign more probability to states that are unreserved than those already reserved by others.
+    
+    $ python run.py --random_exploration=False
+    
 A tkinter window will be displayed in which the play button should be pressed for running the test.
  
 ## Display options
